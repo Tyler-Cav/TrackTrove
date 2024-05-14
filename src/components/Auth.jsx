@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
 
-
-export default function Auth() {
+//TODO: Figure out passing through auth token from app.jsx into
+//TODO: auth.jsx
+export default function Auth(token) {
 
   const CLIENT_ID = "cfc55caf7f324ca0ab3ccfb3bb8a90f5"
   const REDIRECT_URI = `http://localhost:${window.location.port}`
   const AUTH_ENDPOINT = "https://accounts.spotify.com/authorize"
   const RESPONSE_TYPE = "token"
 
-  const [token, setToken] = useState("")
+
 
   useEffect(() => {
     const hash = window.location.hash
