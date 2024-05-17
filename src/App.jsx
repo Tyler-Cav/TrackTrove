@@ -27,7 +27,7 @@ function App() {
 
   return (
     <>
-      <Auth token = />
+      <Auth token={setToken} />
       <form onSubmit={searchArtists}>
         <input type="text" onChange={e => setSearchKey(e.target.value)} />
         <button type={"submit"}>Search</button>

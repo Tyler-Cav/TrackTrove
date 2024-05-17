@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import PropTypes from 'prop-types';
 
-//TODO: Figure out passing through auth token from app.jsx into
-//TODO: auth.jsx
-export default function Auth(token) {
 
+Auth.propTypes = {
+  setToken: PropTypes.func.isRequired
+}
+export default function Auth({setToken}) {
   // TODO: We will need to change this to the Authorization Code flow later... Token based doesn't support refresh tokens.
   // NOTE: https://developer.spotify.com/documentation/web-api/tutorials/code-flow
   const CLIENT_ID = "cfc55caf7f324ca0ab3ccfb3bb8a90f5"
@@ -11,6 +13,8 @@ export default function Auth(token) {
   const AUTH_ENDPOINT = "https://accounts.spotify.com/authorize"
   const RESPONSE_TYPE = "token"
   const SCOPES = ["user-library-read", "user-follow-read"]
+
+  const [token] = useState("")
 
   useEffect(() => {
     const hash = window.location.hash
@@ -28,7 +32,7 @@ export default function Auth(token) {
 
     setToken(token)
 
-  }, [])
+  }, [setToken])
 
   const logout = () => {
     setToken("")
