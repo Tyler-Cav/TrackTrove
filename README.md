@@ -1,5 +1,8 @@
 # React + Vite
 
+Resource For Setting Up Spotify API
+https://dev.to/dom_the_dev/how-to-use-the-spotify-api-in-your-react-js-app-50pn
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:

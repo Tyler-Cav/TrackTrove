@@ -1,55 +1,38 @@
 import './App.css'
-import {useEffect, useState} from 'react';
+import axios from "axios";
+import { useState } from 'react';
+import Auth from './components/Auth'
 
 
 function App() {
-  // TODO: We will need to change this to the Authorization Code flow later... Token based doesn't support refresh tokens.
-  const CLIENT_ID = "cfc55caf7f324ca0ab3ccfb3bb8a90f5"
-  const REDIRECT_URI = `http://localhost:${window.location.port}`
-  const AUTH_ENDPOINT = "https://accounts.spotify.com/authorize"
-  const RESPONSE_TYPE = "token"
-  const SCOPES = ["user-library-read", "user-follow-read"]
-
   const [token, setToken] = useState("")
 
-  useEffect(() => {
-    const hash = window.location.hash
-    let token = window.localStorage.getItem("token")
+  const [searchKey, setSearchKey] = useState("")
+  const [artists, setArtists] = useState([])
 
-    if (!token && hash) {
-        console.log("token", token)
-        console.log("hash",hash)
-        token = hash.substring(1).split("&").find(elem => elem.startsWith("access_token")).split("=")[1]
-        console.log("tokenAfter", token)
+  const searchArtists = async (e) => {
+    e.preventDefault()
+    const { data } = await axios.get("https://api.spotify.com/v1/search", {
+      headers: {
+        Authorization: `Bearer ${token}`
+      },
+      params: {
+        q: searchKey,
+        type: "artist"
+      }
+    })
 
-        window.location.hash = ""
-        window.localStorage.setItem("token", token)
-    }
-
-    setToken(token)
-
-  }, [])
-
-  const logout = () => {
-    setToken("")
-    window.localStorage.removeItem("token")
+    setArtists(data.artists.items)
   }
 
   return (
-    <div className="App">
-      <header className="App-header">
-        {!token ? <a
-          className="App-link"
-          href={`${AUTH_ENDPOINT}?client_id=${CLIENT_ID}&redirect_uri=${REDIRECT_URI}&response_type=${RESPONSE_TYPE}&scope=${encodeURIComponent(SCOPES.join(' '))}`}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Login with Spotify
-        </a> : <button onClick={logout}>Logout</button>
-        }
-      </header>
-    </div>
+    <>
+      <Auth token = />
+      <form onSubmit={searchArtists}>
+        <input type="text" onChange={e => setSearchKey(e.target.value)} />
+        <button type={"submit"}>Search</button>
+      </form>
+    </>
   )
 }
-
 export default App
