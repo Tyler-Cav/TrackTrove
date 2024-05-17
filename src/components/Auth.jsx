@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react';
 export default function Auth(token) {
 
   // TODO: We will need to change this to the Authorization Code flow later... Token based doesn't support refresh tokens.
+  // NOTE: https://developer.spotify.com/documentation/web-api/tutorials/code-flow
   const CLIENT_ID = "cfc55caf7f324ca0ab3ccfb3bb8a90f5"
   const REDIRECT_URI = `http://localhost:${window.location.port}`
   const AUTH_ENDPOINT = "https://accounts.spotify.com/authorize"
