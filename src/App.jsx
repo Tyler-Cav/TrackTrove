@@ -2,7 +2,6 @@ import './App.css'
 import axios from "axios";
 import { useState } from 'react';
 import Auth from './components/Auth'
-import { Counter } from './feature/counter/Counter'
 
 
 function App() {
@@ -28,7 +27,6 @@ function App() {
 
   return (
     <>
-      <Counter />
       <Auth token={setToken} />
       <form onSubmit={searchArtists}>
         <input type="text" onChange={e => setSearchKey(e.target.value)} />
