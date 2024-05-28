@@ -1,10 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import axios from "axios";
 
 export default  function Auth() {
-  const [codeChallenge, setCodeChallenge] = useState(null);
-  let token = "";
-
   const AUTH_ENDPOINT = "https://accounts.spotify.com/authorize";
   const params = {
     client_id: "cfc55caf7f324ca0ab3ccfb3bb8a90f5",
@@ -13,60 +10,62 @@ export default  function Auth() {
     code_challenge_method: "S256",
     scope: ["user-library-read", "user-follow-read"],
   };
-  const paramString = Object.entries(params)
-    .map(([key, value]) => `${key}=${value}`)
-    .join('&');
 
+  const currentToken = {
+    get access_token() { return localStorage.getItem('access_token') || null; },
+    get refresh_token() { return localStorage.getItem('refresh_token') || null; },
+    get expires_in() { return localStorage.getItem('refresh_in') || null },
+    get expires() { return localStorage.getItem('expires') || null },
 
-  const generateRandomString = (length) => {
-    const possible =
-      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    const values = crypto.getRandomValues(new Uint8Array(length));
-    return values.reduce((acc, x) => acc + possible[x % possible.length], "");
-  };
+    save: function (response) {
+      const { access_token, refresh_token, expires_in } = response;
+      localStorage.setItem('access_token', access_token);
+      localStorage.setItem('refresh_token', refresh_token);
+      localStorage.setItem('expires_in', expires_in);
 
-  // START - AUTHORIZATION FLOW WITH PKCE
-  const codeVerifier = generateRandomString(64);
-  console.log("codeVerifier", codeVerifier);
-  window.localStorage.setItem("code_verifier", codeVerifier);
-
-  const sha256 = async (plain) => {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(plain);
-    return window.crypto.subtle.digest("SHA-256", data);
-  };
-
-  const base64encode = (input) => {
-    return btoa(String.fromCharCode(...new Uint8Array(input)))
-      .replace(/=/g, "")
-      .replace(/\+/g, "-")
-      .replace(/\//g, "_");
-  };
-
-  const redirectToSpotifyToAuthorize = () => {
-    const codeChallenge =  async () => {
-      const hashed = await sha256(codeVerifier);
-      setCodeChallenge(base64encode(hashed));
+      const now = new Date();
+      const expiry = new Date(now.getTime() + (expires_in * 1000));
+      localStorage.setItem('expires', expiry);
     }
-    codeChallenge();
-  }
+  };
+
+  const generateCodeVerifier = () => {
+    const array = new Uint32Array(28);
+    window.crypto.getRandomValues(array);
+    return Array.from(array, dec => ('0' + dec.toString(16)).substr(-2)).join('');
+  };
+
+  const generateCodeChallenge = async (codeVerifier) => {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(codeVerifier);
+    const hash = await window.crypto.subtle.digest('SHA-256', data);
+    const base64 = btoa(String.fromCharCode(...new Uint8Array(hash)));
+    return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  };
+
+  const authorize = async () => {
+    const codeVerifier = generateCodeVerifier();
+    const codeChallenge = await generateCodeChallenge(codeVerifier);
+    window.localStorage.setItem('code_verifier', codeVerifier);
+
+    params.code_challenge = codeChallenge;
+
+    const url = `${AUTH_ENDPOINT}?${new URLSearchParams(params).toString()}`;
+    window.location.href = url;
+  };
+
+  const logout = () => {
+    window.localStorage.clear()
+    window.location.reload();
+  };
 
   useEffect(() => {
-    // Generate code challenge and store in local component state
-    const codeChallenge =  async () => {
-      const hashed = await sha256(codeVerifier);
-      setCodeChallenge(base64encode(hashed));
-    }
-    codeChallenge();
-
-    // Check if the user has been redirected back to the app with the authorization code
     const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get("code");
+    const code = urlParams.get('code');
 
-    // Check if we are in callback, start the token exchange
     if (code) {
-      const codeVerifier = window.localStorage.getItem("code_verifier");
-      // TODO: code_verifier keeps being regenerated on load, thus causing `code_verifier was incorrect` errors
+      const codeVerifier = window.localStorage.getItem('code_verifier');
+
       axios({
         method: 'post',
         url: 'https://accounts.spotify.com/api/token',
@@ -75,42 +74,38 @@ export default  function Auth() {
         },
         data: new URLSearchParams({
           client_id: params.client_id,
-          grant_type: "authorization_code",
+          grant_type: 'authorization_code',
           code: code,
-          redirect_uri: `http://localhost:${window.location.port}`,
+          redirect_uri: params.redirect_uri,
           code_verifier: codeVerifier,
         }),
       })
       .then((response) => {
-        const token = response.data.access_token;
-        window.localStorage.setItem('token', token);
+        console.log('Success!', response.data);
+        currentToken.save(response.data);
+
       })
       .catch((error) => {
         console.error('There was an error!', error);
       });
+
+      window.history.pushState({}, null, '/');
+      window.localStorage.removeItem('code_verifier');
+
+
     }
   }, []);
-
-  const logout = () => {
-    token = "";
-    window.localStorage.clear()
-  };
 
   return (
     <div className="App">
       <header className="App-header">
-        {!token ? (
-          <a
-            className="App-link"
-            href={`${AUTH_ENDPOINT}?${paramString}&code_challenge=${codeChallenge}`}
-            // target="_blank"
-            rel="noopener noreferrer"
-          >
-            Login with Spotify
-          </a>
+        {!currentToken.access_token ? (
+          <button onClick={authorize}>Login</button>
         ) : (
+
           <button onClick={logout}>Logout</button>
         )}
+        {/* TODO: 'logout' button shows up after one additional refresh. We need to convert the above to use redux so that that component will re-render after the access_token retrival */}
       </header>
     </div>
   );
