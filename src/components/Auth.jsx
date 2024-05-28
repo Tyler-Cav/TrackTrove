@@ -106,6 +106,7 @@ export default  function Auth() {
           <button onClick={logout}>Logout</button>
         )}
         {/* TODO: 'logout' button shows up after one additional refresh. We need to convert the above to use redux so that that component will re-render after the access_token retrival */}
+        {/* TODO: Get token refreshes working */}
       </header>
     </div>
   );
